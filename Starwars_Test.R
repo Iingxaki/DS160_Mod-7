@@ -1,10 +1,9 @@
 # install package
 install.packages("tidyverse")
 library(tidyverse)
-library(readr)
 
 #load the dataset
-data = read.csv("characters.csv", show_col_type=FALSE)
+data = read.csv("characters.csv")
 
 #Explore the data
 view(data)
@@ -92,4 +91,93 @@ data$gender=ifelse(is.na(data$gender),"unknown",data$gender)
 paste("Number of missing value in gender",sum(is.na(data$gender)))
 colSums(is.na(data))
 
-#impute hair_color, skin_color, eye_color, species, homeworld, birthyear with unknown
+#impute hair_color, skin_color, eye_color, species, homeworld, birth_year with unknown
+data$hair_color=ifelse(is.na(data$hair_color),"unknown",data$hair_color)
+data$skin_color=ifelse(is.na(data$skin_color),"unknown",data$skin_color)
+data$eye_color=ifelse(is.na(data$eye_color),"unknown",data$eye_color)
+data$species=ifelse(is.na(data$species),"unknown",data$species)
+data$homeworld=ifelse(is.na(data$homeworld),"unknown",data$homeworld)
+data$birth_year=ifelse(is.na(data$birth_year),"unknown",data$birth_year)
+
+mass_med=median(data$mass, na.rm=TRUE)
+paste(mass_med)
+data$mass=ifelse(is.na(data$mass),mass_med,data$mass)
+paste("Number of missing values in mass column", sum(is.na(data$mass)))
+
+
+#Mutate (add a column/ variable to the dataset)
+data_new=data%>%
+  mutate(height_ft=height/30.48) %>% #height cm converted
+  select(height,height_ft, mass, species, gender) %>%
+  mutate(tallness= ifelse(height_ft<4,'short', 'tall'))
+head(data_new)  
+  
+#Describe the data_new
+#height_ft
+paste("min height in ft", min(data_new$height_ft))
+paste("max height in ft", max(data_new$height_ft))
+
+#mass
+paste("Range",range(data_new$mass))
+paste('IQR',IQR(data_new$mass))
+
+#centrality
+#mean and median for height_ft
+paste("mean",mean(data_new$height_ft))
+paste("median",median(data_new$height_ft))
+#variance and SD
+paste("variance",var(data_new$height_ft))
+paste("SD",sd(data_new$height_ft))
+
+summary(data_new)
+summary(data_new$height_ft)
+
+#install.packages("psych")
+library(psych)
+describe(data_new)
+
+summary_datanew=describe(data_new)
+view(summary_datanew)
+write.csv(summary_datanew,"summary_datanew.csv")
+
+#calculating frequency of categorical data
+
+table(data_new$species)
+table(data_new$gender)
+table(data_new$tallness)
+table(data$eye_color)
+
+#visualization using ggplot
+
+#Barplot
+#aes=aesthetics
+#geom=geometric objects
+#ggplot to create graphics
+ggplot(data=data_new,aes(x=height_ft))+geom_bar()
+
+# barplot of mass
+ggplot(data=data_new,aes(x=mass))+geom_bar()
+
+#histogram of height
+ggplot(data=data_new,aes(x=height))+geom_histogram()
+
+#boxplot for height
+ggplot(data=data_new,aes(x=height))+geom_boxplot(fill='black')
+
+#save the result
+png('boxplot_height.png')
+
+ggplot(data=data_new,aes(x=height))+geom_boxplot(fill='black')+labs(title='Boxplot of height',x='Height of characters')
+dev.off() #shutdown the device
+
+#Density plot of height
+ggplot(data=data_new,aes(x=height,
+                         color=gender))+geom_density(alpa=.3)
+
+#plot only male and female using density plot
+data_new %>%
+  filter(gender %in% c('male','female')) %>%
+  ggplot(aes(x=height,color=gender, fill=gender))+geom_density(alpha=.4)
+
+#scatter plot height vs mass
+ggplot(data=data_new,aes(x=height,y=mass,color=gender))+geom_point()
